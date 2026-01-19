@@ -1,0 +1,4 @@
+/target
+rustfmt.toml
+.env
+status.db
