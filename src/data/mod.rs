@@ -12,7 +12,7 @@ pub type Error = Box<dyn std::error::Error + Send + Sync>;
 
 pub mod rss;
 
-pub const STATUS_URL: &str = "https://ferris.betteruptime.com/";
+pub const STATUS_URL: &str = "https://status.astermail.org/";
 
 #[derive(Debug, Clone)]
 pub struct Data
@@ -60,8 +60,8 @@ impl Data
         Ok(Self {
             database,
             client,
-            updates_channel: serenity::ChannelId::new(1259163562937679997),
-            update_role: serenity::RoleId::new(1361849307061420055),
+            updates_channel: serenity::ChannelId::new(1462085796474388674),
+            update_role: serenity::RoleId::new(1462158480847802420),
         })
     }
 }

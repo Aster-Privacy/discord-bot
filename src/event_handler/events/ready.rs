@@ -33,8 +33,15 @@ pub async fn ready(http: &Arc<serenity::Http>, bot_data: &serenity::Ready, custo
             {
                 Ok(new_entries) =>
                 {
-                    for entry in new_entries
+                    if new_entries.len() == 0
                     {
+                        continue;
+                    }
+
+                    for entry_number in (0..new_entries.len()).rev()
+                    {
+                        let entry = &new_entries[entry_number];
+
                         let message = format!(
                             "{}\n<t:{}:F>\n{}\n\n{}",
                             data.update_role.mention(),

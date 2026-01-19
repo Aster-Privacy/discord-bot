@@ -1,9 +1,5 @@
-use std::{
-    io::Cursor,
-    str::FromStr,
-};
+use std::io::Cursor;
 
-use poise::serenity_prelude;
 use rss::Channel;
 use sqlx::SqlitePool;
 use tracing::error;
