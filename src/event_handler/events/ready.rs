@@ -9,7 +9,6 @@ use tracing::info;
 use crate::data::{
     Data,
     Error,
-    STATUS_URL,
 };
 
 pub async fn ready(http: &Arc<serenity::Http>, bot_data: &serenity::Ready, custom_data: &Arc<Data>)
@@ -23,13 +22,13 @@ pub async fn ready(http: &Arc<serenity::Http>, bot_data: &serenity::Ready, custo
 
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(std::time::Duration::from_mins(1));
-        let components = get_component();
+        let components = get_component(&data.status_page.link);
 
         loop
         {
             interval.tick().await;
 
-            match crate::data::rss::check_feed(&data.client, &data.database).await
+            match crate::data::rss::check_feed(&data.status_page.link, &data.client, &data.database).await
             {
                 Ok(new_entries) =>
                 {
@@ -44,7 +43,7 @@ pub async fn ready(http: &Arc<serenity::Http>, bot_data: &serenity::Ready, custo
 
                         let message = format!(
                             "{}\n<t:{}:F>\n{}\n\n{}",
-                            data.update_role.mention(),
+                            data.guild.update_role.mention(),
                             entry
                                 .pub_date
                                 .map(|v| v.timestamp())
@@ -56,7 +55,7 @@ pub async fn ready(http: &Arc<serenity::Http>, bot_data: &serenity::Ready, custo
                         let _ = serenity::CreateMessage::new()
                             .content(message)
                             .components(vec![components.clone()])
-                            .execute(&http, data.updates_channel.widen())
+                            .execute(&http, data.guild.updates_channel.widen())
                             .await;
                     }
                 },
@@ -71,9 +70,9 @@ pub async fn ready(http: &Arc<serenity::Http>, bot_data: &serenity::Ready, custo
     Ok(())
 }
 
-fn get_component<'a>() -> serenity::CreateComponent<'a>
+fn get_component<'a>(link: &'a str) -> serenity::CreateComponent<'a>
 {
     serenity::CreateComponent::ActionRow(serenity::CreateActionRow::Buttons(
-        vec![serenity::CreateButton::new_link(STATUS_URL).label("Status Page")].into(),
+        vec![serenity::CreateButton::new_link(link).label("Status Page")].into(),
     ))
 }

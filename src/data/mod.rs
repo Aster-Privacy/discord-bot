@@ -4,21 +4,31 @@ use sqlx::{
     SqlitePool,
 };
 
-use crate::data::rss::check_feed;
+use crate::data::{
+    rss::check_feed,
+    status_page::StatusPageSettings,
+};
 
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
-// pub type Context<'a> = poise::Context<'a, Data, Error>;
-// pub type Command = poise::Command<Data, Error>;
+pub type Context<'a> = poise::Context<'a, Data, Error>;
+pub type Command = poise::Command<Data, Error>;
 
 pub mod rss;
-
-pub const STATUS_URL: &str = "https://status.astermail.org/";
+pub mod status_page;
+pub mod utils;
 
 #[derive(Debug, Clone)]
 pub struct Data
 {
     pub database: SqlitePool,
     pub client: reqwest::Client,
+    pub guild: GuildSettings,
+    pub status_page: StatusPageSettings,
+}
+
+#[derive(Debug, Clone)]
+pub struct GuildSettings
+{
     pub updates_channel: serenity::ChannelId,
     pub update_role: serenity::RoleId,
 }
@@ -28,6 +38,7 @@ impl Data
     pub async fn new() -> Result<Self, Error>
     {
         let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite:status.db".to_string());
+        let link = "https://status.astermail.org/".to_string();
 
         let database = SqlitePoolOptions::new()
             .max_connections(5)
@@ -54,14 +65,21 @@ impl Data
 
         if count.0 == 0
         {
-            check_feed(&client, &database).await?;
+            check_feed(&link, &client, &database).await?;
         }
 
         Ok(Self {
             database,
             client,
-            updates_channel: serenity::ChannelId::new(1462085796474388674),
-            update_role: serenity::RoleId::new(1462158480847802420),
+            guild: GuildSettings {
+                updates_channel: serenity::ChannelId::new(1462158478238230016),
+                update_role: serenity::RoleId::new(1462158480847802420),
+            },
+            status_page: StatusPageSettings {
+                link,
+                token: std::env::var("API_TOKEN").expect("`API_TOKEN` not in env. (Better stack)"),
+                page_id: std::env::var("STATUS_PAGE_ID").expect("`STATUS_PAGE_ID` not in env. (Better stack)"),
+            },
         })
     }
 }

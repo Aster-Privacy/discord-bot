@@ -1,7 +1,3 @@
-mod data;
-mod error_handler;
-mod event_handler;
-
 use std::sync::Arc;
 
 use error_handler::on_error;
@@ -9,9 +5,18 @@ use poise::serenity_prelude as serenity;
 use tracing::debug;
 
 use crate::{
-    data::Data,
+    commands::get_commands,
+    data::{
+        utils::get_owners,
+        Data,
+    },
     event_handler::Handler,
 };
+
+mod commands;
+mod data;
+mod error_handler;
+mod event_handler;
 
 #[tokio::main]
 async fn main()
@@ -21,6 +26,8 @@ async fn main()
     tracing_subscriber::fmt::init();
 
     let options = poise::FrameworkOptions {
+        commands: get_commands(),
+
         prefix_options: poise::PrefixFrameworkOptions {
             prefix: Some("~".into()),
             ..Default::default()
@@ -41,13 +48,15 @@ async fn main()
         },
 
         skip_checks_for_owners: false,
+        owners: get_owners(),
+
         ..Default::default()
     };
 
     let framework = poise::Framework::new(options);
 
     let token = serenity::Token::from_env("DISCORD_TOKEN").expect("`DISCORD_TOKEN` not in env.");
-    let intents = serenity::GatewayIntents::non_privileged();
+    let intents = serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT;
 
     let data = Data::new().await.expect("Failed to initialize data");
 

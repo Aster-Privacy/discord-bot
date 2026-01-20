@@ -131,6 +131,8 @@ dependencies = [
  "poise",
  "reqwest",
  "rss",
+ "serde",
+ "serde_json",
  "sqlx",
  "tokio",
  "tracing",

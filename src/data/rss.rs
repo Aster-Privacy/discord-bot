@@ -4,24 +4,21 @@ use rss::Channel;
 use sqlx::SqlitePool;
 use tracing::error;
 
-use crate::data::{
-    Error,
-    STATUS_URL,
-};
+use crate::data::Error;
 
 #[derive(Debug, Clone)]
 pub struct Entry
 {
-    pub title: String,
+    pub _title: String,
     pub link: String,
     pub pub_date: Option<chrono::DateTime<chrono::Utc>>,
-    pub guid: String,
+    pub _guid: String,
     pub description: String,
 }
 
-pub async fn check_feed(client: &reqwest::Client, pool: &SqlitePool) -> Result<Vec<Entry>, Error>
+pub async fn check_feed(link: &str, client: &reqwest::Client, pool: &SqlitePool) -> Result<Vec<Entry>, Error>
 {
-    let response = client.get(format!("{}feed.rss", STATUS_URL)).send().await?;
+    let response = client.get(format!("{}feed.rss", link)).send().await?;
     let bytes = response.bytes().await?;
     let channel = Channel::read_from(Cursor::new(bytes))?;
 
@@ -52,10 +49,10 @@ pub async fn check_feed(client: &reqwest::Client, pool: &SqlitePool) -> Result<V
                         .map(|dt| dt.with_timezone(&chrono::Utc));
 
                     new_entries.push(Entry {
-                        title: item.title().unwrap_or("No Title").to_string(),
+                        _title: item.title().unwrap_or("No Title").to_string(),
                         link: item.link().unwrap_or("").to_string(),
                         pub_date,
-                        guid,
+                        _guid: guid,
                         description: item.description().unwrap_or("").to_string(),
                     });
                 }
