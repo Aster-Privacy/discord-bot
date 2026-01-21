@@ -39,7 +39,8 @@ pub async fn status(ctx: Context<'_>) -> Result<(), Error>
         .thumbnail(guild_icon)
         .fields(fields);
 
-    ctx.send(poise::CreateReply::new().embed(embed)).await?;
+    ctx.send(poise::CreateReply::new().embed(embed).ephemeral(true))
+        .await?;
 
     Ok(())
 }

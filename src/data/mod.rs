@@ -4,10 +4,7 @@ use sqlx::{
     SqlitePool,
 };
 
-use crate::data::{
-    rss::check_feed,
-    status_page::StatusPageSettings,
-};
+use crate::data::status_page::StatusPageSettings;
 
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 pub type Context<'a> = poise::Context<'a, Data, Error>;
@@ -63,9 +60,15 @@ impl Data
             .fetch_one(&database)
             .await?;
 
+        let status_page = StatusPageSettings {
+            link,
+            token: std::env::var("API_TOKEN").expect("`API_TOKEN` not in env. (Better stack)"),
+            page_id: std::env::var("STATUS_PAGE_ID").expect("`STATUS_PAGE_ID` not in env. (Better stack)"),
+        };
+
         if count.0 == 0
         {
-            check_feed(&link, &client, &database).await?;
+            status_page.get_rss_feed(&client, &database).await?;
         }
 
         Ok(Self {
@@ -75,11 +78,7 @@ impl Data
                 updates_channel: serenity::ChannelId::new(1462158478238230016),
                 update_role: serenity::RoleId::new(1462158480847802420),
             },
-            status_page: StatusPageSettings {
-                link,
-                token: std::env::var("API_TOKEN").expect("`API_TOKEN` not in env. (Better stack)"),
-                page_id: std::env::var("STATUS_PAGE_ID").expect("`STATUS_PAGE_ID` not in env. (Better stack)"),
-            },
+            status_page,
         })
     }
 }

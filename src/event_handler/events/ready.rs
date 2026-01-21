@@ -4,7 +4,10 @@ use poise::serenity_prelude::{
     self as serenity,
     Mentionable,
 };
-use tracing::info;
+use tracing::{
+    error,
+    info,
+};
 
 use crate::data::{
     Data,
@@ -28,7 +31,10 @@ pub async fn ready(http: &Arc<serenity::Http>, bot_data: &serenity::Ready, custo
         {
             interval.tick().await;
 
-            match crate::data::rss::check_feed(&data.status_page.link, &data.client, &data.database).await
+            match data
+                .status_page
+                .get_rss_feed(&data.client, &data.database)
+                .await
             {
                 Ok(new_entries) =>
                 {
@@ -61,7 +67,7 @@ pub async fn ready(http: &Arc<serenity::Http>, bot_data: &serenity::Ready, custo
                 },
                 Err(e) =>
                 {
-                    tracing::error!("Error checking RSS feed: {:?}", e);
+                    error!("Error checking RSS feed: {:?}", e);
                 },
             }
         }
