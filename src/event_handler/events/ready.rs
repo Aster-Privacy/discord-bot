@@ -25,7 +25,10 @@ pub async fn ready(http: &Arc<serenity::Http>, bot_data: &serenity::Ready, custo
 
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(std::time::Duration::from_mins(1));
-        let components = get_component(&data.status_page.link);
+
+        let action_row = serenity::CreateComponent::ActionRow(serenity::CreateActionRow::Buttons(
+            vec![serenity::CreateButton::new_link(data.status_page.link.clone()).label("Status Page")].into(),
+        ));
 
         loop
         {
@@ -60,7 +63,7 @@ pub async fn ready(http: &Arc<serenity::Http>, bot_data: &serenity::Ready, custo
 
                         let _ = serenity::CreateMessage::new()
                             .content(message)
-                            .components(vec![components.clone()])
+                            .components(vec![action_row.clone()])
                             .execute(&http, data.guild.updates_channel.widen())
                             .await;
                     }
@@ -74,11 +77,4 @@ pub async fn ready(http: &Arc<serenity::Http>, bot_data: &serenity::Ready, custo
     });
 
     Ok(())
-}
-
-fn get_component<'a>(link: &'a str) -> serenity::CreateComponent<'a>
-{
-    serenity::CreateComponent::ActionRow(serenity::CreateActionRow::Buttons(
-        vec![serenity::CreateButton::new_link(link).label("Status Page")].into(),
-    ))
 }

@@ -31,14 +31,27 @@ impl StatusPageSettings
 
         for item in channel.items()
         {
+            let current_date = chrono::Utc::now().to_rfc2822();
+
             let guid = match item.guid()
             {
-                Some(g) => g.value().to_string(),
-                None => item.link().unwrap_or_default().to_string(),
+                Some(g) => format!("{}-{}", g.value(), item.pub_date().unwrap_or(&current_date)),
+                None =>
+                {
+                    // jus incase if it ever happens doubt it will
+                    format!("{}-{}", item.link().unwrap_or(&self.link), item.pub_date().unwrap_or(&current_date))
+                },
             };
 
-            let result = sqlx::query("INSERT OR IGNORE INTO guids (id) VALUES (?)")
+            let date = match item.pub_date()
+            {
+                Some(d) => d,
+                None => &current_date,
+            };
+
+            let result = sqlx::query("INSERT OR IGNORE INTO guids (id, date) VALUES (?, ?)")
                 .bind(&guid)
+                .bind(&date)
                 .execute(pool)
                 .await;
 

@@ -1,6 +1,8 @@
 use poise::serenity_prelude as serenity;
 use sqlx::{
     sqlite::SqlitePoolOptions,
+    Pool,
+    Sqlite,
     SqlitePool,
 };
 
@@ -34,31 +36,10 @@ impl Data
 {
     pub async fn new() -> Result<Self, Error>
     {
-        let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite:status.db".to_string());
         let link = "https://status.astermail.org/".to_string();
 
-        let database = SqlitePoolOptions::new()
-            .max_connections(5)
-            .connect_with(
-                database_url
-                    .parse::<sqlx::sqlite::SqliteConnectOptions>()?
-                    .create_if_missing(true),
-            )
-            .await?;
-
-        sqlx::query(
-            "CREATE TABLE IF NOT EXISTS guids (
-                id TEXT PRIMARY KEY
-            )",
-        )
-        .execute(&database)
-        .await?;
-
+        let database = Data::setup_db().await?;
         let client = reqwest::Client::new();
-
-        let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM guids")
-            .fetch_one(&database)
-            .await?;
 
         let status_page = StatusPageSettings {
             link,
@@ -66,9 +47,12 @@ impl Data
             page_id: std::env::var("STATUS_PAGE_ID").expect("`STATUS_PAGE_ID` not in env. (Better stack)"),
         };
 
-        if count.0 == 0
+        if let Ok(r) = Data::check_db(&database).await
         {
-            status_page.get_rss_feed(&client, &database).await?;
+            if r
+            {
+                status_page.get_rss_feed(&client, &database).await?;
+            };
         }
 
         Ok(Self {
@@ -80,5 +64,44 @@ impl Data
             },
             status_page,
         })
+    }
+
+    async fn setup_db() -> Result<Pool<Sqlite>, Error>
+    {
+        let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite:status.db".to_string());
+
+        let database = SqlitePoolOptions::new()
+            .max_connections(5)
+            .connect_with(
+                database_url
+                    .parse::<sqlx::sqlite::SqliteConnectOptions>()?
+                    .create_if_missing(true),
+            )
+            .await?;
+
+        Ok(database)
+    }
+
+    // Checks if the table is empty/exists
+    async fn check_db(database: &Pool<Sqlite>) -> Result<bool, Error>
+    {
+        sqlx::query(
+            "CREATE TABLE IF NOT EXISTS guids (
+                id TEXT PRIMARY KEY,
+                date TEXT
+            )",
+        )
+        .execute(database)
+        .await?;
+
+        let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM guids")
+            .fetch_one(database)
+            .await?;
+
+        match count.0
+        {
+            0 => Ok(false),
+            _ => Ok(true),
+        }
     }
 }
